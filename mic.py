@@ -51,10 +51,13 @@ class RecordManager(object):
         as_ints = array('h', data)
         max_value = max(as_ints)
         if max_value > RecordManager.THRESHOLD:
-            debug('no slience %s > %s', max_value, RecordManager.THRESHOLD)
+#-#            debug('no slience %s > %s', max_value, RecordManager.THRESHOLD)
+            print('*', end='', file=sys.stderr, flush=True)
             return False
         else:
-            debug('slience %s <= %s', max_value, RecordManager.THRESHOLD)
+            print('.', end='', file=sys.stderr, flush=True)
+            pass
+#-#            debug('slience %s <= %s', max_value, RecordManager.THRESHOLD)
         return True
 
     def record(self):
@@ -64,7 +67,7 @@ class RecordManager(object):
                         channels=self.CHANNELS, 
                         rate=self.RATE, 
                         input=True,
-                        output=True,
+                        output=False,
                         frames_per_buffer=self.CHUNK)
         try:
             info("* recording")
@@ -78,6 +81,7 @@ class RecordManager(object):
                     if self.slience_at:
                         self.slience_at = None  # 清空静默计时器
                     if self.status == RecordStatus.STOP:  # 从非记录状态转到记录状态
+                        print('', file=sys.stderr, flush=True)
                         info('* START pre data %s bytes, %.1f seconds', format(len(pre_data), ','), len(pre_data) / self.byte_per_sec)
                         self.status = RecordStatus.START
                         if pre_data:
@@ -90,6 +94,7 @@ class RecordManager(object):
                         if not self.slience_at:
                             self.slience_at = time.time()
                         elif time.time() - self.slience_at > self.slient_duration_before_stop:  # 静默计时器超时，进入非记录状态
+                            print('', file=sys.stderr, flush=True)
                             info('* STOP (slience %.1f seconds since %s)', time.time() - self.slience_at, datetime.fromtimestamp(self.slience_at).strftime('%Y-%m-%d %H:%M:%S'))
                             self.status = RecordStatus.STOP
 #-#                                break
