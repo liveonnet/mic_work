@@ -63,47 +63,56 @@ class RecordManager(object):
     def record(self):
         self.clean()
         self.p = pyaudio.PyAudio()
-        stream = self.p.open(format=self.FORMAT,
-                        channels=self.CHANNELS, 
-                        rate=self.RATE, 
-                        input=True,
-                        output=False,
-                        frames_per_buffer=self.CHUNK)
-        try:
-            info("* recording")
-            self.sample_size = self.p.get_sample_size(self.FORMAT)
-            self.byte_per_sec = self.sample_size * self.CHANNELS * self.RATE
-            self.pre_data_size_before_start = self.byte_per_sec * self.slient_duration_before_start
-            pre_data = b''  # 保存超过阈值前的一段时间内的音频数据
-            while 1:
-                data = stream.read(self.CHUNK)
-                if not self.is_slience(data):  # 触发阈值
-                    if self.slience_at:
-                        self.slience_at = None  # 清空静默计时器
-                    if self.status == RecordStatus.STOP:  # 从非记录状态转到记录状态
-                        print('', file=sys.stderr, flush=True)
-                        info('* START pre data %s bytes, %.1f seconds', format(len(pre_data), ','), len(pre_data) / self.byte_per_sec)
-                        self.status = RecordStatus.START
-                        if pre_data:
-                            self.write_data(pre_data)  # 先补写之前的部分音频
-                            pre_data = b''
-                    self.write_data(data)
-                else:  # 未触发阈值
-                    if self.status == RecordStatus.START:
-                        self.write_data(data)  # 即使未触发阈值，在记录状态下仍然写音频数据
-                        if not self.slience_at:
-                            self.slience_at = time.time()
-                        elif time.time() - self.slience_at > self.slient_duration_before_stop:  # 静默计时器超时，进入非记录状态
+        while 1:
+            stream = self.p.open(format=self.FORMAT,
+                            channels=self.CHANNELS, 
+                            rate=self.RATE, 
+                            input=True,
+                            output=False,
+                            frames_per_buffer=self.CHUNK)
+            try:
+                info("* recording")
+                self.sample_size = self.p.get_sample_size(self.FORMAT)
+                self.byte_per_sec = self.sample_size * self.CHANNELS * self.RATE
+                self.pre_data_size_before_start = self.byte_per_sec * self.slient_duration_before_start
+                pre_data = b''  # 保存超过阈值前的一段时间内的音频数据
+                while 1:
+                    data = stream.read(self.CHUNK)
+                    if not self.is_slience(data):  # 触发阈值
+                        if self.slience_at:
+                            self.slience_at = None  # 清空静默计时器
+                        if self.status == RecordStatus.STOP:  # 从非记录状态转到记录状态
                             print('', file=sys.stderr, flush=True)
-                            info('* STOP (slience %.1f seconds since %s)', time.time() - self.slience_at, datetime.fromtimestamp(self.slience_at).strftime('%Y-%m-%d %H:%M:%S'))
-                            self.status = RecordStatus.STOP
-#-#                                break
-                    else:  # 非记录状态下记录之前的部分音频
-                        pre_data += data
-                        pre_data = pre_data[-self.pre_data_size_before_start:]
-        finally:
-            stream.stop_stream()
-            stream.close()
+                            info('* START pre data %s bytes, %.1f seconds', format(len(pre_data), ','), len(pre_data) / self.byte_per_sec)
+                            self.status = RecordStatus.START
+                            if pre_data:
+                                self.write_data(pre_data)  # 先补写之前的部分音频
+                                pre_data = b''
+                        self.write_data(data)
+                    else:  # 未触发阈值
+                        if self.status == RecordStatus.START:
+                            self.write_data(data)  # 即使未触发阈值，在记录状态下仍然写音频数据
+                            if not self.slience_at:
+                                self.slience_at = time.time()
+                            elif time.time() - self.slience_at > self.slient_duration_before_stop:  # 静默计时器超时，进入非记录状态
+                                print('', file=sys.stderr, flush=True)
+                                info('* STOP (slience %.1f seconds since %s)', time.time() - self.slience_at, datetime.fromtimestamp(self.slience_at).strftime('%Y-%m-%d %H:%M:%S'))
+                                self.status = RecordStatus.STOP
+    #-#                                break
+                        else:  # 非记录状态下记录之前的部分音频
+                            pre_data += data
+                            pre_data = pre_data[-self.pre_data_size_before_start:]
+#-#            except IOError as e:
+#-#                if e[1] == pyaudio.paInputOverflowed:
+#-#                    info('got except %s', e)
+            except OSError as e:
+                info('got except %s', e)
+            finally:
+                try:
+                    stream.stop_stream()
+                    stream.close()
+                except:
+                    pass
 
         self.clean()
         info("* done")
