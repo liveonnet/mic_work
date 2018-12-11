@@ -1,7 +1,7 @@
 import sys
 import os
 import fcntl
-from datetime import date
+from datetime import datetime
 import subprocess
 import shlex
 from time import sleep
@@ -20,7 +20,8 @@ class DailyRecording(object):
 
     def _startRecording(self):
         print('start mic process...')
-        f_name = '/mnt/d4/kevin/mic_data/pi_' + subprocess.check_output(shlex.split('date +%Y%m%d_%H%M%S')).decode('utf8').strip() + '.mp3'
+#-#        f_name = '/mnt/d4/kevin/mic_data/pi_' + subprocess.check_output(shlex.split('date +%Y%m%d_%H%M%S')).decode('utf8').strip() + '.mp3'
+        f_name = '/mnt/BK4T_2/mic_data/pi_' + subprocess.check_output(shlex.split('date +%Y%m%d_%H%M%S')).decode('utf8').strip() + '.mp3'
         self.f_name_stat = f_name + '.stat'
         self.p_mic = subprocess.Popen(shlex.split('%s ./mic.py' % sys.executable), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         self.p_ffmpeg = subprocess.Popen(shlex.split('ffmpeg -y -f s16le -ar 16000 -ac 2 -loglevel quiet -i - -acodec libmp3lame -f mp3 %s' % f_name), stdin=self.p_mic.stdout)
@@ -72,10 +73,30 @@ class DailyRecording(object):
         today = None
         try:
             while 1:
-                now = date.today().strftime('%Y%m%d')
-                if today != now:
-                    print('day changed %s -> %s' % (today, now))
-                    today = now
+                now = datetime.now()
+                hour = now.strftime('%H%M')
+                # 工作日只录下午到晚上的时间段的
+                start_hour = '1630'
+                end_hour = '2355'
+                if now.weekday() in (0, 1, 2, 3, 4) and (hour < start_hour or hour > end_hour):
+#-#                start_hour = '0730'
+#-#                end_hour = '2355'
+#-#                if hour < start_hour or hour > end_hour:
+                    if self._inRecording():
+                        self._stopRecording()
+#-#                    print('not in [%s,%s)' % (start_hour, end_hour))
+                    if not int(hour) % 10:
+#-#                        print('', file=sys.stderr, flush=True)
+                        print(' %s' % now.strftime('%m%d_%H:%M'), end=' ', file=sys.stderr, flush=True)
+                    print('x', end='', file=sys.stderr, flush=True)
+                    sleep(60)
+                    continue
+
+                day = now.strftime('%Y%m%d')
+                # 跨天判断
+                if today != day:
+                    print('\nday changed %s -> %s' % (today, day))
+                    today = day
                     if self._inRecording():
                         self._stopRecording()
                     if not self._inRecording():

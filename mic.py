@@ -13,7 +13,8 @@ from array import array
 from initlog import get_my_log
 from initlog import singleton_run
 
-logger = get_my_log('mic.log')
+#-#logger = get_my_log('mic.log')
+logger = get_my_log('null')
 info, debug, warn = logger.info, logger.debug, logger.warning
 
 class RecordStatus(Enum):

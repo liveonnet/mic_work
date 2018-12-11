@@ -9,7 +9,8 @@ import traceback
 import logging
 import logging.handlers
 
-LOG_DIR = '/tmp'
+#-#LOG_DIR = '/tmp'
+LOG_DIR = '/dev'
 _LOCAL_PATH_ = os.path.abspath(os.path.dirname(__file__))
 for _path in (os.path.abspath(_LOCAL_PATH_ + '/../..'), os.path.abspath(_LOCAL_PATH_ + '/../../lib'), os.path.abspath(_LOCAL_PATH_ + '/../../applib')):
     if _path not in sys.path:
@@ -28,7 +29,8 @@ def get_my_log(logname):
     rlog.addHandler(log_sh)  # add handler(s) to root loggerll
 
     logfile = os.path.join(LOG_DIR if LOG_DIR else _LOCAL_PATH_, logname)
-    log_filehdl = logging.handlers.TimedRotatingFileHandler(logfile, when='midnight', backupCount=5)
+#-#    log_filehdl = logging.handlers.TimedRotatingFileHandler(logfile, when='midnight', backupCount=5)
+    log_filehdl = logging.FileHandler(logfile)
     log_filehdl.setLevel(logging.DEBUG)
     fmt = logging.Formatter('%(asctime)s %(levelname)1.1s %(processName)s %(module)s %(funcName)s %(lineno)d | %(message)s', '%H:%M:%S')
     log_filehdl.setFormatter(fmt)
