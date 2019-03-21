@@ -31,7 +31,8 @@ class DailyRecording(object):
 
     def _stopRecording(self):
         if self.p_mic:
-            print('kill mic process ...')
+            now = datetime.now().strftime('%m%d_%H:%M')
+            print('\n%s kill mic process ...' % now)
             self.p_mic.kill()
             self.p_mic.communicate()
             print('kill mic process done')
